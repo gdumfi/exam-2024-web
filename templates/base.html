@@ -14,8 +14,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-
-    <img src="{{ url_for('static', filename='watermark.png') }}" alt="Watermark" class="watermark">
     {% include 'navbar.html' %}
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
