@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Главная страница{% endblock %}
+{% block content %}
+<h1>Главная страница</h1>
+{% if current_user.is_authenticated %}
+<p>Здравствуй, {{ current_user.first_name }}!</p>
+{% else %}
+<p>Здравствуй, гость!</p>
+{% endif %}
+<table>
+    <tr>
+        <th>Название</th>
+        <th>Автор</th>
+        <th>Год</th>
+        <th>Издательство</th>
+        <th>Жанры</th>
+    </tr>
+    {% for book in books %}
+    <tr>
+        <td>{{ book.title }}</td>
+        <td>{{ book.author }}</td>
+        <td>{{ book.year }}</td>
+        <td>{{ book.publisher }}</td>
+        <td>
+            {% for genre in book.genres %}
+                {{ genre.name }}
+            {% endfor %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
