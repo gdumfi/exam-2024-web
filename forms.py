@@ -3,8 +3,9 @@ from wtforms import StringField, PasswordField, TextAreaField, SelectField, Sele
 from wtforms.validators import InputRequired, Length, DataRequired, URL, ValidationError
 from wtforms.widgets import ListWidget, CheckboxInput
 from flask_wtf.file import FileField, FileAllowed
-from models import User, Book, Review, Genre, Cover, Role, book_genres, Collection, book_collections
-import bleach
+
+from extensions import db
+from models import User, Genre, Book
 
 class MultiCheckboxField(SelectMultipleField):
     widget = ListWidget(prefix_label=False)
@@ -21,7 +22,7 @@ class RegisterForm(FlaskForm):
     last_name = StringField('Фамилия', validators=[InputRequired(), Length(max=100)])
     first_name = StringField('Имя', validators=[InputRequired(), Length(max=100)])
     middle_name = StringField('Отчество', validators=[Length(max=100)])
-    
+
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
@@ -88,3 +89,18 @@ class CollectionForm(FlaskForm):
 
 class AddToCollectionForm(FlaskForm):
     collection = SelectField('Выберите подборку', coerce=int, validators=[InputRequired()])
+
+class SearchForm(FlaskForm):
+    title = StringField('Название', validators=[Length(max=255)])
+    genres = MultiCheckboxField('Жанр', coerce=int)
+    year = SelectMultipleField('Год', coerce=int)
+    volume_from = StringField('Объём от', validators=[Length(max=10)])
+    volume_to = StringField('Объём до', validators=[Length(max=10)])
+    author = StringField('Автор', validators=[Length(max=255)])
+    submit = SubmitField('Поиск')
+
+    def __init__(self, *args, **kwargs):
+        super(SearchForm, self).__init__(*args, **kwargs)
+        self.genres.choices = [(genre.id, genre.name) for genre in Genre.query.all()]
+        years = [year[0] for year in db.session.query(Book.year).distinct().order_by(Book.year).all()]
+        self.year.choices = [(year, year) for year in years]

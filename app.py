@@ -1,13 +1,12 @@
 from flask import Flask, render_template, redirect, url_for, flash, request
 from config import Config
 from extensions import db, migrate, login_manager
-from forms import LoginForm, RegisterForm
+from forms import LoginForm, RegisterForm, SearchForm
 from books import books
 from collections_blueprint import collections_bp
 from models import User, Book, Review, Genre, Cover, Role, book_genres, Collection, book_collections
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required
-
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -24,10 +23,35 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 @app.route('/')
-@app.route('/index')
+@app.route('/index', methods=['GET', 'POST'])
 def index():
+    form = SearchForm()
+    query = Book.query
+
+    if form.validate_on_submit():
+        if form.title.data:
+            query = query.filter(Book.title.ilike(f'%{form.title.data}%'))
+        if form.genres.data:
+            query = query.filter(Book.genres.any(Genre.id.in_(form.genres.data)))
+        if form.year.data:
+            query = query.filter(Book.year.in_(form.year.data))
+        if form.volume_from.data:
+            try:
+                volume_from = int(form.volume_from.data)
+                query = query.filter(Book.page_count >= volume_from)
+            except ValueError:
+                pass
+        if form.volume_to.data:
+            try:
+                volume_to = int(form.volume_to.data)
+                query = query.filter(Book.page_count <= volume_to)
+            except ValueError:
+                pass
+        if form.author.data:
+            query = query.filter(Book.author.ilike(f'%{form.author.data}%'))
+
     page = request.args.get('page', 1, type=int)
-    books = Book.query.order_by(Book.year.desc()).paginate(page=page, per_page=10, error_out=False)
+    books = query.order_by(Book.year.desc()).paginate(page=page, per_page=10, error_out=False)
 
     for book in books.items:
         reviews = Review.query.filter_by(book_id=book.id).all()
@@ -39,7 +63,8 @@ def index():
             book.avg_rating = 0
             book.review_count = 0
 
-    return render_template('index.html', books=books)
+    return render_template('index.html', books=books, form=form)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -86,6 +111,7 @@ def logout():
     logout_user()
     flash('Выход успешно выполнен!', 'success')
     return redirect(url_for('index'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
