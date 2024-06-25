@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="book-details">
+        {% if current_user.is_authenticated and (current_user.role.name != 'user' or current_user.id == book.user_id) %}
+            <div class="actions">
+                <a href="{{ url_for('books.edit_book', book_id=book.id) }}" class="btn btn-primary">Редактировать книгу</a>
+                {% if current_user.role.name == 'admin' %}
+                    <form method="post" action="{{ url_for('books.delete_book', book_id=book.id) }}" onsubmit="return confirm('Вы уверены, что хотите удалить эту книгу?');" style="display: inline-block;">
+                        <button type="submit" class="btn btn-danger">Удалить книгу</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <article>
+            <h1>{{ book.title }}</h1>
+            <p><strong>Автор:</strong> {{ book.author }}</p>
+            <p><strong>Год издания:</strong> {{ book.year }}</p>
+            <p><strong>Издательство:</strong> {{ book.publisher }}</p>
+            <p><strong>Описание:</strong> {{ book.short_description | markdown | safe }} </p>
+            <p><strong>Жанры:</strong>
+                <ul>
+                    {% for genre in book.genres %}
+                        <li>{{ genre.name }}</li>
+                    {% endfor %}
+                </ul>
+            </p>
+            <p><strong>Количество страниц:</strong> {{ book.page_count }}</p>
+            <img src="{{ url_for('static', filename='images/' + book.cover.filename) }}" alt="Обложка книги" class="book-cover" style="max-width: 30%;">
+        </article>
+
+        <section class="reviews">
+            {% if current_user.is_authenticated %}
+                {% if user_review %}
+                    <h2>Ваша рецензия</h2>
+                    <article class="review user-review">
+                        <p><strong>Оценка:</strong> {{ dict(form.rating.choices)[user_review.rating|string] }}</p>
+                        <p><strong>Текст:</strong> {{ user_review.text }}</p>
+                        <p><strong>Дата:</strong> {{ user_review.date_added }}</p>
+                    </article>
+                {% else %}
+                    <h2>Рецензия</h2>
+                    <p><a href="{{ url_for('books.review', book_id=book.id) }}" class="btn btn-primary">Оставить рецензию</a></p>
+                {% endif %}
+            {% else %}
+                <p>Чтобы оставить рецензию, <a href="{{ url_for('login') }}">войдите</a> или <a href="{{ url_for('register') }}">зарегистрируйтесь</a>.</p>
+            {% endif %}
+
+            <h3>Все рецензии:</h3>
+            {% if reviews %}
+                {% for review in reviews %}
+                    {% if current_user.is_authenticated and review.user_id == current_user.id %}
+                        <article class="review user-review">
+                    {% else %}
+                        <article class="review">
+                    {% endif %}
+                        <p><strong>Оценка:</strong> {{ dict(form.rating.choices)[review.rating|string] }}</p>
+                        <p><strong>Пользователь:</strong> {{ review.user.first_name }} {{ review.user.last_name }}</p>
+                        <p><strong>Текст:</strong> {{ review.text | safe }}</p>
+                        <p><strong>Дата:</strong> {{ review.date_added }}</p>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <p>Пока нет рецензий на эту книгу.</p>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}
