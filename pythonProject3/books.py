@@ -4,24 +4,19 @@ import bleach
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
-from extensions import db
+from config import db
 from forms import BookForm, EditBookForm, ReviewForm
 from models import Book, Review, Genre, Cover
 import markdown2
-
 books = Blueprint('books', __name__)
-
 @books.route('/book/<int:book_id>')
 def book(book_id):
     book = Book.query.get_or_404(book_id)
     reviews = Review.query.filter_by(book_id=book.id).all()
-
     user_review = None
     form = ReviewForm()
-
     if current_user.is_authenticated:
         user_review = Review.query.filter_by(user_id=current_user.id, book_id=book.id).first()
-
     return render_template('book.html', book=book, reviews=reviews, user_review=user_review, form=form)
 
 @books.app_template_filter('markdown')

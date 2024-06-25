@@ -3,31 +3,26 @@ from wtforms import StringField, PasswordField, TextAreaField, SelectField, Sele
 from wtforms.validators import InputRequired, Length, DataRequired, URL, ValidationError
 from wtforms.widgets import ListWidget, CheckboxInput
 from flask_wtf.file import FileField, FileAllowed
-
-from extensions import db
+from config import db
 from models import User, Genre, Book
 
 class MultiCheckboxField(SelectMultipleField):
     widget = ListWidget(prefix_label=False)
     option_widget = CheckboxInput()
-
 class LoginForm(FlaskForm):
     username = StringField('Логин', validators=[DataRequired()])
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember = BooleanField('Запомнить меня')
-
 class RegisterForm(FlaskForm):
     username = StringField('Логин', validators=[InputRequired(), Length(min=4, max=100)])
     password = PasswordField('Пароль', validators=[InputRequired(), Length(min=6, max=100)])
     last_name = StringField('Фамилия', validators=[InputRequired(), Length(max=100)])
     first_name = StringField('Имя', validators=[InputRequired(), Length(max=100)])
     middle_name = StringField('Отчество', validators=[Length(max=100)])
-
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
             raise ValidationError('Такой логин уже занят.')
-
 class BookForm(FlaskForm):
     title = StringField('Название книги', validators=[InputRequired(), Length(max=255)])
     short_description = TextAreaField('Краткое описание книги', validators=[InputRequired()])
@@ -41,10 +36,9 @@ class BookForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(BookForm, self).__init__(*args, **kwargs)
         self.genre.choices = [(genre.id, genre.name) for genre in Genre.query.all()]
-
 class EditBookForm(FlaskForm):
     title = StringField('Название книги', validators=[InputRequired(), Length(max=255)])
-    short_description = TextAreaField('Краткое описание книги', validators=[InputRequired()])
+    short_description = TextAreaField('Описание книги', validators=[InputRequired()])
     year = IntegerField('Год издания', validators=[InputRequired()])
     publisher = StringField('Издательство', validators=[InputRequired(), Length(max=255)])
     author = StringField('Автор', validators=[InputRequired(), Length(max=255)])
@@ -54,7 +48,6 @@ class EditBookForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(EditBookForm, self).__init__(*args, **kwargs)
         self.genre.choices = [(genre.id, genre.name) for genre in Genre.query.all()]
-
     def populate_obj(self, book):
         self.title.populate_obj(book, 'title')
         self.short_description.populate_obj(book, 'short_description')
@@ -71,17 +64,8 @@ class EditBookForm(FlaskForm):
                 raise ValidationError('Неверное значение жанра.')
 
 class ReviewForm(FlaskForm):
-    rating = SelectField('Оценка', choices=[
-        ('5', 'Отлично'),
-        ('4', 'Хорошо'),
-        ('3', 'Удовлетворительно'),
-        ('2', 'Неудовлетворительно'),
-        ('1', 'Плохо'),
-        ('0', 'Ужасно')
-    ], validators=[InputRequired()])
-
+    rating = SelectField('Оценка', choices=[('5', 'Отлично'),('4', 'Хорошо'),('3', 'Удовлетворительно'),('2', 'Неудовлетворительно'),('1', 'Плохо'),('0', 'Ужасно')], validators=[InputRequired()])
     text = TextAreaField('Текст рецензии', validators=[InputRequired(), Length(max=1000)])
-
     submit = SubmitField('Оставить рецензию')
 
 class SearchForm(FlaskForm):
